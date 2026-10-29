@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install pytest -e .
+      - name: Tests (live tests use the Ubuntu archive and the python-versions manifest)
+        run: pytest -v
+        env:
+          LIVE: "1"
+      - name: Installed command runs on the demo
+        run: |
+          set +e
+          ubuntu-latest-check examples/demo
+          test $? -eq 1
